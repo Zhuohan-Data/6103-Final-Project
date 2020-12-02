@@ -38,12 +38,6 @@ def dfChkBasics(dframe, valCnt = False):
       print(f'\n{cnt}: {colname} value_counts(): ')
       print(dframe[colname].value_counts())
       cnt +=1
-
-# %%
-def drop0 (col):
-  for i in col:
-    df.drop(df[df[j]] == 0 or '-')
-  
 # %%
 # Dataset
 # The data in this project contains 31 variables and more than 200,000 used cars' data. 
@@ -51,6 +45,8 @@ def drop0 (col):
 # 150,000 observations will be train set and 50,000 observation will be test set.
 # %%
 df=pd.read_csv("used_car_train_20200313.csv")
+# Origin dataset is too large, so we only research on sample have size 20000.
+df=df.sample(n=20000,random_state=2020)
 #%%
 # Data Processing
 #
@@ -92,14 +88,29 @@ dfQ2["notRepairedDamage"] = dfQ2["notRepairedDamage"].astype('int')
 dfQ2=dfQ2[(dfQ2['notRepairedDamage'] == 0) | (dfQ2['notRepairedDamage'] == 1)]
 dfQ2["notRepairedDamage"] = dfQ2["notRepairedDamage"].astype('category')
 #%%
-# Drop car that power equal 0
+# Drop abnormal value in power, kilometer and price.
 dfQ2=dfQ2.drop(dfQ2[dfQ2['power']==0].index)
 dfQ2=dfQ2.drop(dfQ2[dfQ2['kilometer']==0].index)
+dfQ2=dfQ2.drop(dfQ2[dfQ2['price']==float].index)
+
+# %%
+# Drop outliers
+dfQ2['power'] = dfQ2['power'][dfQ2['power'].between(dfQ2['power'].quantile(.05), dfQ2['power'].quantile(.95))]
+dfQ2['kilometer'] = dfQ2['kilometer'][dfQ2['kilometer'].between(dfQ2['kilometer'].quantile(.05), dfQ2['kilometer'].quantile(.95))]
+dfQ2['price'] = dfQ2['price'][dfQ2['price'].between(dfQ2['price'].quantile(.05), dfQ2['price'].quantile(.95))]
 #%%
 # QQPlot    
-sm.qqplot(dfQ2['power'], line ='45') 
-py.show() 
+stats.probplot(dfQ2['power'], dist="norm", plot=py)
+py.show()
+stats.probplot(dfQ2['kilometer'], dist="norm", plot=py)
+py.show()
+stats.probplot(dfQ2['price'], dist="norm", plot=py)
+py.show()
+#%%
+# Histogram
 
+#%%
+# Boxplot
 #%%
 dfChkBasics(dfQ2, valCnt= True)
 # %%
