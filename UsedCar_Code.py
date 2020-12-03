@@ -177,14 +177,89 @@ sns.despine()
 
 #%%
 # Q2.3 Model 
-# 
+#
+from sklearn import linear_model
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import cross_val_score
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import classification_report
+from sklearn.metrics import roc_auc_score, roc_curve
+from statsmodels.formula.api import glm
+import statsmodels.api as sm
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import confusion_matrix
+from sklearn import linear_model 
 #%%
-dfChkBasics(dfQ2, valCnt= True)
+# Train-Test Split
+xdfQ2 = dfQ2[['power', 'kilometer','notRepairedDamage']]
+print(xdfQ2.head())
+ydfQ2 = dfQ2['price']
+print(ydfQ2.head())
+
+x_train, x_test, y_train, y_test = train_test_split(xdfQ2, ydfQ2, test_size = 0.25, random_state=2020)
+
+lr = linear_model.LinearRegression()
+
+#%%
+#print('Logit model accuracy (with the test set):', lr.score(x_test, y_test))
+#print('Logit model accuracy (with the train set):', lr.score(x_train, y_train))
+#%%
+#
+# CV Split
+
+#%%
+#
+# Classification
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC, LinearSVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+
+clf1 = SVC()
+clf2 = SVC(kernel="linear")
+clf3 = LinearSVC()
+clf4 = LogisticRegression()
+clf5 = DecisionTreeClassifier()
+clf6 = KNeighborsClassifier(n_neighbors=3) 
+classifiers = [clf1,clf2,clf3] 
+classifiers.append(clf4)
+classifiers.append(clf5)
+classifiers.append(clf6)
+#%%
+for c in classifiers:
+    c.fit(x_train,y_train)
+    print(f'train score:  {c.score(x_train,y_train)}')
+    print(f'test score:  {c.score(x_test,y_test)}')
+    print(confusion_matrix(y_test, c.predict(x_test)))
+    print(classification_report(y_test, c.predict(x_test)))
+
+#%%
+for c in classifiers:
+  print('\n%s\n'%(c))
+  print(cross_val_score(c, x_test, y_test, cv= 10, scoring='accuracy'))
+#%%
+#
+# ROC-AUC
+
+#%%
+dfChkBasics(dfQ3, valCnt= True)
 # %%
-# Q3 Market Behavior
+# Q3 Market Behavior(Canceled)
 # Research the influence of 
 # Seller and Offer type 
 # on the value of the vehicle.
+dfQ3 = df.iloc[:,[0,11,12]]
+dfQ3.set_index('SaleID')
+dfQ3.replace('-',np.nan,inplace=True)
+dfQ3=dfQ3.dropna()
+
+dfQ3=dfQ3[(dfQ3['seller'] == 0) | (dfQ3['seller'] == 1)]
+dfQ3=dfQ3[(dfQ3['offerType'] == 0) | (dfQ3['offerType'] == 1)]
+# Since we find all sellers and offerType are 0, we canceled this question.
+dfChkBasics(dfQ3, valCnt= True)
+#%%
 
 # %%
 # Conclusion
