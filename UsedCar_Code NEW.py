@@ -297,7 +297,7 @@ for c in classifiers:
 #Choose Linear model
 from statsmodels.formula.api import ols
 
-lm = ols(formula='price ~ model + brand + bodyType + fuelType + C(gearbox)', data=dfQ1).fit()
+lm = ols(formula='price ~ C(brand) + C(bodyType) + C(fuelType) + C(gearbox)', data=dfQ1).fit()
 print( lm.summary() )
 np.mean(lm.predict(dfQ1))
 
@@ -305,7 +305,7 @@ np.mean(lm.predict(dfQ1))
 #%%
 #VIF
 from statsmodels.stats.outliers_influence import variance_inflation_factor
-dfQ1=dfQ1.iloc[:,[2,3,4,5,6]]
+dfQ1=dfQ1.iloc[:,[3,4,5,6]]
 vif = pd.DataFrame()
 vif["variables"] = dfQ1.columns
 vif["VIF"] = [ variance_inflation_factor(dfQ1.values, i) for i in range(dfQ1.shape[1]) ]
@@ -396,8 +396,11 @@ dfQ2['kilometer'].plot(kind='box')
 plt.show()
 #%%
 # Q2.2 Visualization
-# Power vs Damage
-# Before, we assume the "power" is the power of after using.
+# Power vs kilometer
+# Before, we assume the "power" is the power of after using. 
+# So we check the relation between power and kilometer.
+# If our assumption is right, when  the travel distance become larger, the power of engine should reduce.
+# But scatter shows that they don't have a clear relation, so the power at here might mean the power before using.
 fuzzykilo = dfQ2['kilometer'] + np.random.normal(0,0.75, size=len(dfQ2['kilometer']))
 fuzzypower = dfQ2['power'] + np.random.normal(0,3.5, size=len(dfQ2['notRepairedDamage']))
 plt.plot(fuzzykilo,fuzzypower, 'o', markersize=8 ,alpha = 0.1)
