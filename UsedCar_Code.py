@@ -1,6 +1,6 @@
 
 #%%
-#os.chdir(r'F:\Github\6103-Final-Project')
+os.chdir(r'F:\Github\6103-Final-Project')
 # %%
 import pandas as pd
 import numpy as np
@@ -200,18 +200,9 @@ print(ydfQ2.head())
 
 x_train, x_test, y_train, y_test = train_test_split(xdfQ2, ydfQ2, test_size = 0.25, random_state=2020)
 
-lr = linear_model.LinearRegression()
-
-#%%
-#print('Logit model accuracy (with the test set):', lr.score(x_test, y_test))
-#print('Logit model accuracy (with the train set):', lr.score(x_train, y_train))
 #%%
 #
-# CV Split
-
-#%%
-#
-# Classification
+# Prediction Model
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC, LinearSVC
 from sklearn.neighbors import KNeighborsClassifier
@@ -222,31 +213,48 @@ clf2 = SVC(kernel="linear")
 clf3 = LinearSVC()
 clf4 = LogisticRegression()
 clf5 = DecisionTreeClassifier()
-clf6 = KNeighborsClassifier(n_neighbors=3) 
-classifiers = [clf1,clf2,clf3] 
-classifiers.append(clf4)
-classifiers.append(clf5)
-classifiers.append(clf6)
-#%%
+clf6 = KNeighborsClassifier(n_neighbors=3)
+clf7 = linear_model.LinearRegression() 
+classifiers = [clf1,clf2,clf3,clf4,clf5,clf6,clf7]
+#classifiers = [clf7]  
+
+# %%
 for c in classifiers:
     c.fit(x_train,y_train)
+    print('\n%s\n'%(c))
     print(f'train score:  {c.score(x_train,y_train)}')
     print(f'test score:  {c.score(x_test,y_test)}')
-    print(confusion_matrix(y_test, c.predict(x_test)))
-    print(classification_report(y_test, c.predict(x_test)))
 
 #%%
 for c in classifiers:
   print('\n%s\n'%(c))
-  print(cross_val_score(c, x_test, y_test, cv= 10, scoring='accuracy'))
+  print(cross_val_score(c, x_test, y_test, cv= 10))
+  print(f'CV mean:  {np.mean(cross_val_score(c, x_test, y_test, cv= 10))}')
 #%%
 #
+classifiers = [clf4]
 # ROC-AUC
-
+for c in classifiers:
+  model = c.fit(x_train, y_train)
+  y_predict_proba = model.predict_proba(x_test)
+  ns_probs = [0 for _ in range(len(y_test))]
+  y_predict_proba = y_predict_proba[:, 1]
+  ns_auc = roc_auc_score(y_test, ns_probs)
+  lr_auc = roc_auc_score(y_test, y_predict_proba)
+  print('No Skill: ROC AUC=%.3f' % (ns_auc))
+  print('Logistic: ROC AUC=%.3f' % (lr_auc))
+  ns_fpr, ns_tpr, _ = roc_curve(y_test, ns_probs)
+  lr_fpr, lr_tpr, _ = roc_curve(y_test, y_predict_proba)
+  plt.plot(ns_fpr, ns_tpr, linestyle='--', label='No Skill')
+  plt.plot(lr_fpr, lr_tpr, marker='.', label='\n%s\n'%(c))
+  plt.xlabel('False Positive Rate')
+  plt.ylabel('True Positive Rate')
+  plt.legend()
+  plt.show()
 #%%
-dfChkBasics(dfQ3, valCnt= True)
+print(DecisionTreeClassifier().fit(x_train, y_train).predict_proba(x_test))
 # %%
-# Q3 Market Behavior(Canceled)
+# Q3 Market Behavior (Canceled)
 # Research the influence of 
 # Seller and Offer type 
 # on the value of the vehicle.
