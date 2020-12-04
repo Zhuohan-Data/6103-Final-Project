@@ -1,6 +1,6 @@
 
 #%%
-os.chdir(r'F:\Github\6103-Final-Project')
+#os.chdir(r'F:\Github\6103-Final-Project')
 # %%
 import pandas as pd
 import numpy as np
@@ -83,6 +83,8 @@ dfQ2 = df.iloc[:,[0,7,8,9,14]]
 dfQ2.set_index('SaleID')
 dfQ2.replace('-',np.nan,inplace=True)
 dfQ2=dfQ2.dropna()
+
+dfChkBasics(dfQ2, valCnt= True)
 #%%
 # Change the data type
 dfQ2["power"] = dfQ2["power"].astype('float')
@@ -105,12 +107,20 @@ dfQ2['price'] = dfQ2['price'][dfQ2['price'].between(dfQ2['price'].quantile(.025)
 dfQ2=dfQ2.dropna()
 
 #%%
+plt.hist(dfQ2['kilometer'], bins='auto')
+plt.xlabel("Kilometer")
+plt.ylabel("Frequency")
+plt.title("Kilometer Histogram")
+plt.show()
+#%%
 # Kilometer issue
 #
 # We think this variable's stratification might come from a mutiple choice question.
 # And the last choice might be the kilometer that larger than 15km, so we have so many "15km" at here.
 # In order to continue our analysis, we choose to drop most of cars' "kilometer" equal to 15.
-dfQ2=dfQ2.drop(((dfQ2['kilometer']==15).sample(frac=0.7,random_state=1)).index)
+dfQ2=dfQ2.drop((dfQ2[dfQ2['kilometer']==15]).sample(frac=0.7,random_state=1).index)
+
+dfChkBasics(dfQ2)
 #%%
 # Q2.1.2 Normality Plot
 # QQPlot    
@@ -138,7 +148,8 @@ dfQ2['power'].plot(kind='box')
 plt.show()
 dfQ2['kilometer'].plot(kind='box')
 plt.show()
-
+#%%
+sns.regplot('kilometer', 'power', data=dfQ2, y_jitter=0.75, x_jitter=3.5, scatter_kws={'alpha': 0.3, 's': 40 } )
 #%%
 # Q2.2 Visualization
 # Power vs Damage
@@ -232,27 +243,32 @@ for c in classifiers:
   print(f'CV mean:  {np.mean(cross_val_score(c, x_test, y_test, cv= 10))}')
 #%%
 #
-classifiers = [clf4]
-# ROC-AUC
-for c in classifiers:
-  model = c.fit(x_train, y_train)
-  y_predict_proba = model.predict_proba(x_test)
-  ns_probs = [0 for _ in range(len(y_test))]
-  y_predict_proba = y_predict_proba[:, 1]
-  ns_auc = roc_auc_score(y_test, ns_probs)
-  lr_auc = roc_auc_score(y_test, y_predict_proba)
-  print('No Skill: ROC AUC=%.3f' % (ns_auc))
-  print('Logistic: ROC AUC=%.3f' % (lr_auc))
-  ns_fpr, ns_tpr, _ = roc_curve(y_test, ns_probs)
-  lr_fpr, lr_tpr, _ = roc_curve(y_test, y_predict_proba)
-  plt.plot(ns_fpr, ns_tpr, linestyle='--', label='No Skill')
-  plt.plot(lr_fpr, lr_tpr, marker='.', label='\n%s\n'%(c))
-  plt.xlabel('False Positive Rate')
-  plt.ylabel('True Positive Rate')
-  plt.legend()
-  plt.show()
+# ROC-AUC (Canceled) 
+#
+# Can't draw on numeric response.
 #%%
-print(DecisionTreeClassifier().fit(x_train, y_train).predict_proba(x_test))
+# Model Summary
+from statsmodels.formula.api import ols
+
+lm = ols(formula='price ~ power + kilometer + C(notRepairedDamage)', data=dfQ2).fit()
+print( lm1.summary() )
+np.mean(lm.predict(dfQ2))
+
+#%%
+# VIF
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+dfQ2=dfQ2.iloc[:,[1,2,3,4]]
+vif = pd.DataFrame()
+vif["variables"] = dfQ2.columns
+vif["VIF"] = [ variance_inflation_factor(dfQ2.values, i) for i in range(dfQ2.shape[1]) ]
+print(vif)
+#%%
+# Final Model
+lm1 = ols(formula='price ~ + kilometer + C(notRepairedDamage)', data=dfQ2).fit()
+print( lm1.summary() )
+np.mean(lm1.predict(dfQ2))
+
+
 # %%
 # Q3 Market Behavior (Canceled)
 # Research the influence of 
