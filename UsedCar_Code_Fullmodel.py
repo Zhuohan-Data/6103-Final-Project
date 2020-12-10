@@ -65,9 +65,6 @@ dfFull['notRepairedDamage'] = dfFull['notRepairedDamage'].astype('int')
 dfFull = dfFull[dfFull['fuelType']<=6]
 dfFull = dfFull[dfFull['bodyType']<=7]
 
-# %%
-# Remove data with negative values
-dfFull = dfFull[dfFull >= 0]
 
 #%%
 # Change 'notRepairedDamage' to category that only have 0 or 1
@@ -82,10 +79,21 @@ dfFull=dfFull.drop(dfFull[dfFull['price']==float].index)
 #%%
 # Remove outliers
 cols = ['power', 'kilometer', 'price']
-Q1 = dfFull.quantile(0.25)
-Q3 = dfFull.quantile(0.75)
-IQR = Q3 - Q1
-dfFull = dfFull[~((dfFull[cols] < (Q1 - 1.5 * IQR)) |(dfFull[cols] > (Q3 + 1.5 * IQR))).any(axis=1)]
+# Q1 = dfFull.quantile(0.25)
+# Q3 = dfFull.quantile(0.75)
+# IQR = Q3 - Q1
+# dfFull = dfFull[~((dfFull[cols] < (Q1 - 1.5 * IQR)) |(dfFull[cols] > (Q3 + 1.5 * IQR))).any(axis=1)]
+dfFull['model'] = dfFull['model'][dfFull['model'].between(dfFull['model'].quantile(.025), dfFull['model'].quantile(.975))]
+dfFull['brand'] = dfFull['brand'][dfFull['brand'].between(dfFull['brand'].quantile(.025), dfFull['brand'].quantile(.975))]
+dfFull['power'] = dfFull['power'][dfFull['power'].between(dfFull['power'].quantile(.025), dfFull['power'].quantile(.975))]
+dfFull['kilometer'] = dfFull['kilometer'][dfFull['kilometer'].between(dfFull['kilometer'].quantile(.025), dfFull['kilometer'].quantile(.975))]
+dfFull['price'] = dfFull['price'][dfFull['price'].between(dfFull['price'].quantile(.025), dfFull['price'].quantile(.975))]
+dfFull=dfFull.dropna()
+dfFull["model"] = dfFull["model"].astype('int')
+dfFull["brand"] = dfFull["brand"].astype('int')
+# %%
+# Remove data with negative values
+dfFull = dfFull[dfFull >= 0]
 dfChkBasics(dfFull)
 
 # %%
@@ -157,27 +165,7 @@ plt.hist(dfFull['price'], density=True, bins=30)
 plt.ylabel('Probability')
 plt.xlabel('price')
 plt.title("price Histogram")
-# %%
-# Linear Model
-lmfull = ols(formula = 'price ~ C(brand) + C(bodyType) + fuelType + gearbox + power + kilometer + C(notRepairedDamage)', data=dfFull).fit()
-print( lmfull.summary() )
-np.mean(lmfull.predict(dfFull))
 
-# %%
-# VIF
-from statsmodels.stats.outliers_influence import variance_inflation_factor
-dfFulllm = dfFull.iloc[:, [2,3,4,5,6,7,8,9,10]]
-vif = pd.DataFrame()
-vif["VIF Factor"] = [variance_inflation_factor(dfFulllm.values, i) for i in range(dfFulllm.shape[1])]
-vif["features"] = dfFulllm.columns
-vif.round(1)
-
-# %%
-# Modified Linear Model
-# The VIF for power is 14.1 > 10, so we want to exclude power from the linear model.
-lmfull_adj = ols(formula = 'price ~ C(brand) + C(bodyType) + fuelType + gearbox + kilometer + C(notRepairedDamage)', data=dfFull).fit()
-print( lmfull_adj.summary() )
-np.mean(lmfull_adj.predict(dfFull))
 # %%
 from sklearn import linear_model
 from sklearn.model_selection import train_test_split
@@ -221,3 +209,27 @@ for c in classifiers:
   print('\n%s\n'%(c))
   print(cross_val_score(c, x_test, y_test, cv= 10))
   print(f'CV mean:  {np.mean(cross_val_score(c, x_test, y_test, cv= 10))}')
+
+# %%
+# Linear Model
+lmfull = ols(formula = 'price ~ C(brand) + C(bodyType) + fuelType + gearbox + power + kilometer + C(notRepairedDamage)', data=dfFull).fit()
+print( lmfull.summary() )
+np.mean(lmfull.predict(dfFull))
+
+# %%
+# VIF
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+dfFulllm = dfFull.iloc[:, [2,3,4,5,6,7,8,9,10]]
+vif = pd.DataFrame()
+vif["VIF Factor"] = [variance_inflation_factor(dfFulllm.values, i) for i in range(dfFulllm.shape[1])]
+vif["features"] = dfFulllm.columns
+vif.round(1)
+
+# %%
+# Modified Linear Model
+# The VIF for power is 14.1 > 10, so we want to exclude power from the linear model.
+lmfull_adj = ols(formula = 'price ~ C(brand) + C(bodyType) + fuelType + gearbox + kilometer + C(notRepairedDamage)', data=dfFull).fit()
+print( lmfull_adj.summary() )
+np.mean(lmfull_adj.predict(dfFull))
+
+# %%
