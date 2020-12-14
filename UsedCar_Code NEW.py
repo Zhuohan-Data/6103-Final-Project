@@ -1,4 +1,5 @@
 
+
 #%%
 #os.chdir(r'F:\Github\6103-Final-Project')
 # %%
@@ -530,9 +531,235 @@ dfQ3=dfQ3[(dfQ3['seller'] == 0) | (dfQ3['seller'] == 1)]
 dfQ3=dfQ3[(dfQ3['offerType'] == 0) | (dfQ3['offerType'] == 1)]
 # Since we find all sellers and offerType are 0, we canceled this question.
 dfChkBasics(dfQ3, valCnt= True)
+
 #%%
+# Q4 Suggestions on Buying a Used Vehicle
+# Run full model to do predictions
+# Adjust full model to make more accurate conclusions
+# %%
+# EDA
+# Subsets and drop na
+from statsmodels.formula.api import ols
+dfFull = df.iloc[:, [0,1,2,3,4,5,6,7,8,9,14]]
+dfFull.set_index('SaleID')
+dfChkBasics(dfFull)
+dfFull.replace('-',np.nan,inplace=True)
+dfFull = dfFull.dropna()
+
+# %%
+# Change data type and set gearbox to category that only have 0 or 1
+dfFull['gearbox'] = dfFull['gearbox'].astype('float')
+dfFull = dfFull[(dfFull['gearbox'] == 0) | (dfFull['gearbox'] == 1)]
+dfFull['gearbox'] = dfFull['gearbox'].astype('int')
+
+dfFull['power'] = dfFull['power'].astype('float')
+dfFull['kilometer'] = dfFull['kilometer'].astype('float')
+dfFull['notRepairedDamage'] = dfFull['notRepairedDamage'].astype('int')
+dfFull = dfFull[dfFull['fuelType']<=6]
+dfFull = dfFull[dfFull['bodyType']<=7]
+
+
+#%%
+# Change 'notRepairedDamage' to category that only have 0 or 1
+dfFull=dfFull[(dfFull['notRepairedDamage'] == 0) | (dfFull['notRepairedDamage'] == 1)]
+
+#%%
+# Drop abnormal value in power, kilometer and price
+dfFull=dfFull.drop(dfFull[dfFull['power']==0].index)
+dfFull=dfFull.drop(dfFull[dfFull['kilometer']==0].index)
+dfFull=dfFull.drop(dfFull[dfFull['price']==float].index)
+
+#%%
+# Remove outliers (Used 1.5 * IQR first, but changed the range to uniform with Q1 and Q2)
+# cols = ['power', 'kilometer', 'price']
+# Q1 = dfFull.quantile(0.25)
+# Q3 = dfFull.quantile(0.75)
+# IQR = Q3 - Q1
+# dfFull = dfFull[~((dfFull[cols] < (Q1 - 1.5 * IQR)) |(dfFull[cols] > (Q3 + 1.5 * IQR))).any(axis=1)]
+dfFull['model'] = dfFull['model'][dfFull['model'].between(dfFull['model'].quantile(.025), dfFull['model'].quantile(.975))]
+dfFull['brand'] = dfFull['brand'][dfFull['brand'].between(dfFull['brand'].quantile(.025), dfFull['brand'].quantile(.975))]
+dfFull['power'] = dfFull['power'][dfFull['power'].between(dfFull['power'].quantile(.025), dfFull['power'].quantile(.975))]
+dfFull['kilometer'] = dfFull['kilometer'][dfFull['kilometer'].between(dfFull['kilometer'].quantile(.025), dfFull['kilometer'].quantile(.975))]
+dfFull['price'] = dfFull['price'][dfFull['price'].between(dfFull['price'].quantile(.025), dfFull['price'].quantile(.975))]
+dfFull=dfFull.dropna()
+dfFull["model"] = dfFull["model"].astype('int')
+dfFull["brand"] = dfFull["brand"].astype('int')
+# %%
+# Remove data with negative values
+dfFull = dfFull[dfFull >= 0]
+dfChkBasics(dfFull)
+
+# %%
+# Visualization (Make sure data is filtered as wanted)
+# QQ-plot
+stats.probplot(dfFull['model'], dist="norm", plot=py)
+py.show()
+stats.probplot(dfFull['brand'], dist="norm", plot=py)
+py.show()
+stats.probplot(dfFull['bodyType'], dist="norm", plot=py)
+py.show()
+stats.probplot(dfFull['fuelType'], dist="norm", plot=py)
+py.show()
+stats.probplot(dfFull['gearbox'], dist="norm", plot=py)
+py.show()
+stats.probplot(dfFull['power'], dist="norm", plot=py)
+py.show()
+stats.probplot(dfFull['kilometer'], dist="norm", plot=py)
+py.show()
+stats.probplot(dfFull['notRepairedDamage'], dist="norm", plot=py)
+py.show()
+stats.probplot(dfFull['price'], dist="norm", plot=py)
+py.show()
+
+#%%
+# Histogram (Make sure data is filtered as wanted)
+# model histogram
+plt.hist(dfFull['model'], density=True, bins=30)
+plt.ylabel('Probability')
+plt.xlabel('model')
+plt.title("model Histogram")
+#%%
+# brand histogram
+plt.hist(dfFull['brand'], density=True, bins=30)
+plt.ylabel('Probability')
+plt.xlabel('brand')
+plt.title("brand Histogram")
+#%%
+# bodyType histogram
+plt.hist(dfFull['bodyType'], density=True, bins=30)
+plt.ylabel('Probability')
+plt.xlabel('bodyType')
+plt.title("bodyType Histogram")
+#%%
+# fuelType histogram
+plt.hist(dfFull['fuelType'], density=True, bins=30)
+plt.ylabel('Probability')
+plt.xlabel('fuelType')
+plt.title("fuelType Histogram")
+#%%
+# gearbox histogram
+plt.hist(dfFull['gearbox'], density=True, bins=30)
+plt.ylabel('Probability')
+plt.xlabel('gearbox')
+plt.title("gearbox Histogram")
+#%%
+# power histogram
+plt.hist(dfFull['power'], density=True, bins=30)
+plt.ylabel('Probability')
+plt.xlabel('power')
+plt.title("power Histogram")
+#%%
+# kilometer histogram
+plt.hist(dfFull['kilometer'], density=True, bins=30)
+plt.ylabel('Probability')
+plt.xlabel('kilometer')
+plt.title("kilometer Histogram")
+
+#%%
+# notRepairedDamage histogram
+plt.hist(dfFull['notRepairedDamage'], density=True, bins=30)
+plt.ylabel('Probability')
+plt.xlabel('notRepairedDamage')
+plt.title("notRepairedDamage Histogram")
+
+#%%
+# price histogram
+plt.hist(dfFull['price'], density=True, bins=30)
+plt.ylabel('Probability')
+plt.xlabel('price')
+plt.title("price Histogram")
+
+# %%
+from sklearn import linear_model
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import cross_val_score
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import classification_report
+from sklearn.metrics import roc_auc_score, roc_curve
+from statsmodels.formula.api import glm
+import statsmodels.api as sm
+# %%
+# Setup train-test split
+X_dfFull = dfFull[['brand', 'bodyType', 'fuelType', 'gearbox', 'power', 'kilometer', 'notRepairedDamage']]
+print(X_dfFull.head())
+y_dfFull = dfFull['price']
+print(y_dfFull.head())
+x_train, x_test, y_train, y_test = train_test_split(X_dfFull, y_dfFull, test_size = 0.25, random_state=2020)
+# %%
+# Prediction model
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC, LinearSVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+
+clf1 = SVC()
+clf2 = LogisticRegression()
+clf3 = DecisionTreeClassifier()
+clf4 = KNeighborsClassifier(n_neighbors=3)
+clf5 = linear_model.LinearRegression() 
+classifiers = [clf1,clf2,clf3,clf4,clf5]
+
+# %%
+# Train-test Split
+# Linear regression has much higher accuracy
+for c in classifiers:
+    c.fit(x_train,y_train)
+    print('\n%s\n'%(c))
+    print(f'train score:  {c.score(x_train,y_train)}')
+    print(f'test score:  {c.score(x_test,y_test)}')
+
+# %%
+# Cross Validation
+# Linear regression has much higher accuracy
+for c in classifiers:
+  print('\n%s\n'%(c))
+  print(cross_val_score(c, x_test, y_test, cv= 10))
+  print(f'CV mean:  {np.mean(cross_val_score(c, x_test, y_test, cv= 10))}')
+
+# %%
+# Full Variable Linear Model
+lmfull = ols(formula = 'price ~ C(brand) + C(bodyType) + C(fuelType) + C(gearbox) + power + kilometer + C(notRepairedDamage)', data=dfFull).fit()
+print( lmfull.summary() )
+np.mean(lmfull.predict(dfFull))
+
+# %%
+# VIF
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+dfFulllm = dfFull.iloc[:, [2,3,4,5,6,7,8,9,10]]
+vif = pd.DataFrame()
+vif["VIF Factor"] = [variance_inflation_factor(dfFulllm.values, i) for i in range(dfFulllm.shape[1])]
+vif["features"] = dfFulllm.columns
+vif.round(1)
+
+# %%
+# Modified Linear Model
+# The VIF for power is 14.1 > 10, so we want to exclude power from the linear model.
+lmfull_adj = ols(formula = 'price ~ C(brand) + C(bodyType) + C(fuelType) + C(gearbox) + kilometer + C(notRepairedDamage)', data=dfFull).fit()
+print( lmfull_adj.summary() )
+np.mean(lmfull_adj.predict(dfFull))
 
 # %%
 # Conclusion
+# From the results of the linear models, we can see that a used vehicle’s brand, body type, fuel type, gearbox type, 
+# damage history and milage have effects on its price. However, we cannot confirm the relation of a used vehicle’s power 
+# and price from the results. Specifically, we can see that different brands could have different prices. This is the 
+# same for a used vehicle’s body type. For example, a limousine is more expensive than a minicar. Also, from the results, 
+# we can see that different fuel type also have different impacts on used vehicle’s price. For example, a car using 
+# gasoline is less expensive than a car using diesel. If a vehicle has crash history or it is damaged in the past, the 
+# price will drop due to this reason. We can also observe that a vehicle would have a cheaper price if the milage is high 
+# since the coefficient from the linear model is negative. 
+# In summary, all these factors except milage have a heavy impact on the price for thousands of dollars. As for the milage 
+# of a vehicle, it depends on the numbers of the milage. If a vehicle has a milage less than 10000 km, then the price of 
+# that vehicle is going to be high if not considering other conditions. However, the price of a high milage vehicle would 
+# probably be cheap in this sense. Another thing worth to mention is that we could use the linear model to make predictions 
+# for specific conditions. For example, we have two vehicles with the same brand. Vehicle A is an automatic limousine using 
+# gasoline that was damaged in the past and vehicle B is an automatic minicar that uses diesel without any damage history. 
+# Also, the milage for vehicle A is 10000 km and the milage for vehicle B is 30000. In this case, we could see that the 
+# limousine would be cost 3072.47$ more than the minicar. Even though the limousine has a damage history, it is still more 
+# valuable than the minicar. As for the suggestion to used vehicle buyers, even though damaged car is cheaper, it is 
+# hazardous to purchase these kinds of vehicles. Instead, buyers should look at compare between different brands, body types,
+#  fuel types and gearbox types. Furthermore, buyers could look for cars that have a higher milage.
+
 
 # %%
